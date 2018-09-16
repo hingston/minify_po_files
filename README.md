@@ -1,6 +1,6 @@
 # Minify Django .po Files
 
-Removes all unnecessary lines from [.po files](https://www.gnu.org/software/gettext/manual/html_node/PO-Files.html).
+Removes all unnecessary lines from [.po files](https://www.gnu.org/software/gettext/manual/html_node/PO-Files.html) in a [Django](https://www.djangoproject.com/start/overview/) project.
 
 ### Usage
 `$ python minify_po_files.py [-h] [-p] [-e ENCODING] path`

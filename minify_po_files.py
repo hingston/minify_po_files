@@ -17,7 +17,7 @@ def get_immediate_subdirectories(directory: str):
 
 def minify_po_files(path: str, encoding: str = "utf8", print_output: bool = False):
     langs = get_immediate_subdirectories(path)
-    langs = ["de"]
+    #langs = ["de"]
     for lang in langs:
         with open(path + lang + "/LC_MESSAGES/django.po", encoding=encoding) as file:
 
@@ -49,6 +49,10 @@ def minify_po_files(path: str, encoding: str = "utf8", print_output: bool = Fals
                                 lines_all.append("# skipped")
                         else:
                             lines_all.append(line)
+
+        for line in lines_all:
+            print(line.rstrip())
+        exit(11)
 
         lines = []
         skip = True

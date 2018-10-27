@@ -17,41 +17,37 @@ def get_immediate_subdirectories(directory: str):
 
 def minify_po_files(path: str, encoding: str = "utf8", print_output: bool = False):
     langs = get_immediate_subdirectories(path)
-    langs = ["de"]
     for lang in langs:
         with open(path + lang + "/LC_MESSAGES/django.po", encoding=encoding) as file:
 
-
-                    lines_all = []
-                    skip = False
+            lines_all = []
+            skip = False
+            fuzzy = False
+            first = True
+            # Add all lines to a list but ignore all fuzzy msgstr
+            for line in file:
+                if line.startswith("#") and "fuzzy" in line:
+                    if first:
+                        first = False
+                    else:
+                        fuzzy = True
+                if line.startswith("#: ."):
+                    if fuzzy:
+                        lines_all.append('\n')
                     fuzzy = False
-                    first = True
-                    # Add all lines to a list but ignore all fuzzy msgstr
-                    for line in file:
-                        if line.startswith("#") and "fuzzy" in line:
-                            if first:
-                                first = False
-                            else:
-                                fuzzy = True
-                        if line.startswith("#: ."):
-                            if fuzzy:
-                                lines_all.append('\n')
-                            fuzzy = False
-                            skip = False
+                    skip = False
 
-                        if fuzzy:
-                            if not skip:
-                                if line.startswith('msgstr "'):
-                                    lines_all.append('msgstr ""')
-                                    skip = True
-                                else:
-                                    lines_all.append(line)
-                            else:
-                                lines_all.append("# skipped")
+                if fuzzy:
+                    if not skip:
+                        if line.startswith('msgstr "'):
+                            lines_all.append('msgstr ""')
+                            skip = True
                         else:
                             lines_all.append(line)
-
-
+                    else:
+                        lines_all.append("# skipped")
+                else:
+                    lines_all.append(line)
 
         lines = []
         skip = True
@@ -73,10 +69,6 @@ def minify_po_files(path: str, encoding: str = "utf8", print_output: bool = Fals
         lines.pop(0)
         lines.pop(0)
 
-        for line in lines:
-            print(line.rstrip())
-        exit(11)
-
         required_lines = [
             '# Copyright (C) 2017-2018 LOLNAMES.GG',
             '# This file is distributed under the same license as the PACKAGE package.',
@@ -90,38 +82,24 @@ def minify_po_files(path: str, encoding: str = "utf8", print_output: bool = Fals
             '\n'
         ]
 
-
         finished_lines = []
-        building_line_msgid = False
-        building_line_msgstr = False
         part_line = ''
         for line in lines:
-            if line == 'msgid ""':
-                building_line_msgid = True
-            elif building_line_msgid:
-                if line.startswith('"'):
-                    part_line = part_line + line[1:-1]
-                else:
-                    building_line_msgid = False
-                    finished_lines.append('msgid "' + part_line + '"')
-                    part_line = ''
-                    finished_lines.append(line)
-            elif line == 'msgstr ""':
-                building_line_msgstr = True
-            elif building_line_msgstr:
-                if line.startswith('"'):
-                    part_line = part_line + line[1:-1]
-                else:
-                    building_line_msgstr = False
-                    finished_lines.append('msgstr "' + part_line + '"')
-                    part_line = ''
-                    finished_lines.append(line)
+            if line.startswith('msgstr ""'):
+                if part_line != '':
+                    finished_lines.append(part_line + '"')
+                part_line = 'msgstr "'
+            elif line.startswith('msgid ""'):
+                if part_line != '':
+                    finished_lines.append(part_line + '"')
+                part_line = 'msgid "'
+            elif line.startswith('"'):
+                part_line = part_line + line[1:-1]
             else:
+                if part_line != '':
+                    finished_lines.append(part_line + '"')
+                    part_line = ''
                 finished_lines.append(line)
-
-        print(len(finished_lines))
-        if finished_lines[len(finished_lines) - 1].startswith('msgid "'):
-            finished_lines.append('msgstr ""')
 
         with open(path + lang + "/LC_MESSAGES/django.po", "w", encoding=encoding) as output:
             for line in required_lines:

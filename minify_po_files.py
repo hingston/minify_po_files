@@ -34,6 +34,7 @@ def minify_po_files(path: str, encoding: str = "utf8", print_output: bool = Fals
                             else:
                                 fuzzy = True
                         if line.startswith("#: ."):
+                            lines_all.append('\n')
                             fuzzy = False
                             skip = False
 

@@ -133,7 +133,7 @@ def minify_po_files(path: str, encoding: str = "utf8", print_output: bool = Fals
                   "%(page_title)s": "PAGE_STR", }
 
         # TODO use threads for this
-        if translate and lang != "tl" and lang != "template":
+        if translate and lang != "template":
 
             if lang == "zh_Hans":
                 google_lang = "zh-CN"
@@ -203,13 +203,13 @@ def minify_po_files(path: str, encoding: str = "utf8", print_output: bool = Fals
             if lang != "template":
                 percent = -100 * not_translated / total + 100
                 print(
-                    "| {0} | [{1}](https://raw.githubusercontent.com/hingston/lolnames.gg/master/locale/{0}/LC_MESSAGES/django.po) | {2} {3:.2f}% |".format(
+                    "| {0} | [{1}](https://raw.githubusercontent.com/hingston/lolnames.gg/master/locale/{0}/LC_MESSAGES/django.po) | {2} {3:.2f}% | ❌ |".format(
                         lang,
                         name,
                         tick,
                         percent))
             else:
-                template = "| | [{1}](https://raw.githubusercontent.com/hingston/lolnames.gg/master/locale/{0}/LC_MESSAGES/django.po) | |".format(
+                template = "| | [{1}](https://raw.githubusercontent.com/hingston/lolnames.gg/master/locale/{0}/LC_MESSAGES/django.po) | | |".format(
                     lang,
                     name)
 

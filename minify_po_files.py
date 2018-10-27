@@ -9,15 +9,30 @@ See:
 import argparse
 import os
 
+from google.cloud import translate
+
+translate_client = translate.Client()
+
+
+def translate_po_files(lang: str, english_str: str):
+    translation = translate_client.translate(english_str, target_language=lang)
+
+    print(english_str)
+    print(translation['translatedText'] + "\n")
+
+    return translation['translatedText']
+
 
 def get_immediate_subdirectories(directory: str):
     return [name for name in os.listdir(directory)
             if os.path.isdir(os.path.join(directory, name))]
 
 
-def minify_po_files(path: str, encoding: str = "utf8", print_output: bool = False):
+def minify_po_files(path: str, encoding: str = "utf8", print_output: bool = False, translate: bool = False):
     langs = get_immediate_subdirectories(path)
+    # langs = ["de"]
     for lang in langs:
+
         with open(path + lang + "/LC_MESSAGES/django.po", encoding=encoding) as file:
 
             lines_all = []
@@ -101,10 +116,58 @@ def minify_po_files(path: str, encoding: str = "utf8", print_output: bool = Fals
                     part_line = ''
                 finished_lines.append(line)
 
+        if finished_lines[len(finished_lines) - 1].startswith('msgid "'):
+            finished_lines.append('msgstr ""')
+
+        translated_lines = []
+
+        tokens = {"%(name)s": "NAME_STR",
+                  "%(num_variants)s": "111111",
+                  "%(display_name)s": "DISPLAY_STR",
+                  "%(summoner_name)s": "SUMMONER_STR",
+                  "%(account_id)s": "222222",
+                  "%(number)s": "333333",
+                  "%(months)s": "444",
+                  "%(days)s": "555",
+                  "%(region)s": "REGION_STR",
+                  "%(page_title)s": "PAGE_STR", }
+
+        # TODO use threads for this
+        if translate and lang != "tl" and lang != "template":
+
+            if lang == "zh_Hans":
+                google_lang = "zh-CN"
+            elif lang == "zh_Hant":
+                google_lang = "zh-TW"
+            else:
+                google_lang = lang
+
+            english_str = ""
+            for line in finished_lines:
+                if line.startswith('msgid "'):
+                    english_str = line[7:-1]
+                    translated_lines.append(line)
+                elif line == 'msgstr ""':
+                    if "%(" not in english_str:
+                        translated_lines.append('msgstr "' + translate_po_files(google_lang, english_str) + '"')
+                    else:
+                        for key, token in tokens.items():
+                            english_str = english_str.replace(key, token)
+                        translated_str = translate_po_files(google_lang, english_str)
+                        # print(english_str)
+                        for key, token in tokens.items():
+                            translated_str = translated_str.replace(token, key)
+                        # print(translated_str + "\n")
+                        translated_lines.append('msgstr "' + translated_str + '"')
+                else:
+                    translated_lines.append(line)
+        else:
+            translated_lines = finished_lines
+
         with open(path + lang + "/LC_MESSAGES/django.po", "w", encoding=encoding) as output:
             for line in required_lines:
                 output.write(line + "\n")
-            for line in finished_lines:
+            for line in translated_lines:
                 if line.startswith('msgid'):
                     output.write(line.rstrip() + "\n")
                 elif line.startswith('msgstr'):
@@ -162,8 +225,9 @@ if __name__ == '__main__':
     parser.add_argument("path", type=str, help="path of Django locale directory")
     parser.add_argument("-p", "--print", help="print percentage translated for readme.md", action="store_true")
     parser.add_argument("-e", "--encoding", type=str, help="encoding, default='utf8'", default="utf8")
+    parser.add_argument("-t", "--translate", help="print percentage translated for readme.md", action="store_true")
     args = parser.parse_args()
 
     # has to be run twice TODO make it only require once
     minify_po_files(args.path, encoding=args.encoding)
-    minify_po_files(args.path, encoding=args.encoding, print_output=args.print)
+    minify_po_files(args.path, encoding=args.encoding, print_output=args.print, translate=args.translate)

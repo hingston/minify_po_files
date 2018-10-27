@@ -17,7 +17,7 @@ def get_immediate_subdirectories(directory: str):
 
 def minify_po_files(path: str, encoding: str = "utf8", print_output: bool = False):
     langs = get_immediate_subdirectories(path)
-    #langs = ["de"]
+    langs = ["de"]
     for lang in langs:
         with open(path + lang + "/LC_MESSAGES/django.po", encoding=encoding) as file:
 
@@ -34,7 +34,8 @@ def minify_po_files(path: str, encoding: str = "utf8", print_output: bool = Fals
                             else:
                                 fuzzy = True
                         if line.startswith("#: ."):
-                            lines_all.append('\n')
+                            if fuzzy:
+                                lines_all.append('\n')
                             fuzzy = False
                             skip = False
 
@@ -50,9 +51,7 @@ def minify_po_files(path: str, encoding: str = "utf8", print_output: bool = Fals
                         else:
                             lines_all.append(line)
 
-        for line in lines_all:
-            print(line.rstrip())
-        exit(11)
+
 
         lines = []
         skip = True
@@ -73,6 +72,10 @@ def minify_po_files(path: str, encoding: str = "utf8", print_output: bool = Fals
                     lines.append(line.rstrip())
         lines.pop(0)
         lines.pop(0)
+
+        for line in lines:
+            print(line.rstrip())
+        exit(11)
 
         required_lines = [
             '# Copyright (C) 2017-2018 LOLNAMES.GG',

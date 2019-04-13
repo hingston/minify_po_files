@@ -24,11 +24,11 @@ def translate_po_files(lang: str, english_str: str):
 
 
 def get_immediate_subdirectories(directory: str):
-    return [name for name in os.listdir(directory)
-            if os.path.isdir(os.path.join(directory, name))]
+    return [name for name in os.listdir(directory) if os.path.isdir(os.path.join(directory, name))]
 
 
-def minify_po_files(path: str, encoding: str = "utf8", print_output: bool = False, translate: bool = False):
+def minify_po_files(path: str, encoding: str = "utf8", print_output: bool = False, translate: bool = False,
+                    count: bool = False):
     langs = get_immediate_subdirectories(path)
     # langs = ["de"]
     for lang in langs:
@@ -46,7 +46,7 @@ def minify_po_files(path: str, encoding: str = "utf8", print_output: bool = Fals
                         first = False
                     else:
                         fuzzy = True
-                if line.startswith("#: ."):
+                elif line.startswith("#: ."):
                     if fuzzy:
                         lines_all.append('\n')
                     fuzzy = False
@@ -172,7 +172,7 @@ def minify_po_files(path: str, encoding: str = "utf8", print_output: bool = Fals
                     output.write(line.rstrip() + "\n")
                 elif line.startswith('msgstr'):
                     output.write(line.rstrip() + "\n" + "\n")
-
+    words = 0
     total = -1
     not_translated = -1
 
@@ -186,6 +186,7 @@ def minify_po_files(path: str, encoding: str = "utf8", print_output: bool = Fals
         with open(path + lang + "/LC_MESSAGES/django.po", encoding=encoding) as file:
             for line in file:
                 if line.startswith('msgid "'):
+                    words = words + line.count(' ')  # number of spaces + 1 but it counts the space between msgid and "
                     total = total + 1
 
                 if line.startswith('msgstr ""'):
@@ -217,6 +218,8 @@ def minify_po_files(path: str, encoding: str = "utf8", print_output: bool = Fals
         not_translated = -1
     if print_output:
         print(template)
+    if count:
+        print("Words to translate per file:", words / len(lang_names))
 
 
 if __name__ == '__main__':
@@ -224,10 +227,12 @@ if __name__ == '__main__':
                                      description="removes all unnecessary lines from .po files")
     parser.add_argument("path", type=str, help="path of Django locale directory")
     parser.add_argument("-p", "--print", help="print percentage translated for readme.md", action="store_true")
+    parser.add_argument("-c", "--count", help="print the number of words to translate", action="store_true")
     parser.add_argument("-e", "--encoding", type=str, help="encoding, default='utf8'", default="utf8")
     parser.add_argument("-t", "--translate", help="print percentage translated for readme.md", action="store_true")
     args = parser.parse_args()
 
     # has to be run twice TODO make it only require once
     minify_po_files(args.path, encoding=args.encoding)
-    minify_po_files(args.path, encoding=args.encoding, print_output=args.print, translate=args.translate)
+    minify_po_files(args.path, encoding=args.encoding, print_output=args.print, translate=args.translate,
+                    count=args.count)
